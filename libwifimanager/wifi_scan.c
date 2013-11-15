@@ -265,13 +265,19 @@ static int InitScanThread(void (*callback)(struct scan_result*))
     char replybuf[512] = {0};
     int  replybuflen = sizeof(replybuf)-1;
 
+    sleep(0);
+    pthread_mutex_lock(&NRQ_Mutex);
+    int ret = NewNetworkRequest("SCAN TYPE=ONLY", NULL);
+    pthread_mutex_unlock(&NRQ_Mutex);
+    if(ret == 0)  sem_post(&sem);
+
     struct timespec to;
-    to.tv_sec = time(NULL) + 10;  
-    to.tv_nsec = 0;  
+    to.tv_sec = time(NULL) + 10;
+    to.tv_nsec = 0;
 
     pthread_mutex_lock(&scan_result_mutex);
     ALOGD("wait for scan complete signal");
-    int ret = pthread_cond_timedwait(&scan_result_cond, &scan_result_mutex, &to);
+    ret = pthread_cond_timedwait(&scan_result_cond, &scan_result_mutex, &to);
     pthread_mutex_unlock(&scan_result_mutex);
 
     if(ret == ETIMEDOUT)   

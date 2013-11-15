@@ -448,8 +448,6 @@ static int connect_to_accesspoint(struct accesspoint_info *pAPInfo)
     //set the selected AP we want to connect
     setSelectedAP(pAPInfo);
 
-    sem_init(&sem_conn_cmd_complete, 0, 0);
-
     //step1: add network
     pthread_mutex_lock(&NRQ_Mutex);
     ret = NewNetworkRequest("ADD_NETWORK", cmd_add_network_callback);
@@ -474,9 +472,10 @@ static void ManualConnectThread(struct accesspoint_info *pAPInfo)
 {
 
     if (!connect_thread_started) {
+        sem_init(&sem_conn_cmd_complete, 0, 0);
         connect_thread_started = 1;
     }else{
-        WIFI_MSG_ERR_CALLBACK("Trying connecting...");
+        WIFI_MSG_ERR_CALLBACK("Busy,please try again...");
         goto out1;
     }
 
@@ -647,6 +646,16 @@ static void EventLoopThread()
             if(tail == head)
                 ALOGE("Event overlapped, the head event may overlapped");
             pthread_mutex_unlock(&EQ_Mutex);
+		}else if(strstr(replybuf, "CTRL-EVENT-EAP-FAILURE")!=NULL)
+		{
+		    ALOGD("%s",replybuf);
+            //add authenticating event, some case may not have this.
+            pthread_mutex_lock(&EQ_Mutex);
+            EventQueue[tail] = AUTHENTICATION_FAILURE_EVENT;
+            tail = (tail+1)%MAX_EVENT_QUEUE_SIZE;
+            if(tail == head)
+                ALOGE("Event overlapped, the head event may overlapped");
+            pthread_mutex_unlock(&EQ_Mutex);
 		}else if(strstr(replybuf, "CTRL-EVENT-STATE-CHANGE")!=NULL)
 		{
 		    //ignore the event.
@@ -752,6 +761,10 @@ static int AutoManagerThread(void * params)
                     break;
                 case NETWORK_AUTHENTICATING_EVENT:
                     //TODO deal with this?
+                    break;
+                case AUTHENTICATION_FAILURE_EVENT:
+                    wifi_state = AUTHENTICATION_FAIL;
+                    WIFI_MSG_ERR_CALLBACK("Authentication failed...");
                     break;
                 case NETWORK_DISCONNECTION_EVENT:
                     wifi_state = DISCONNECTED;

@@ -3,14 +3,15 @@
 
 //wifi network status definition
 #define DISABLING          -1
-#define DISABLED           0
-#define ENABLING           1
-#define ENABLED            2
-#define CONNECTING         3
-#define SCANNING           4
-#define SCAN_COMPLETE      5
-#define CONNECTED          6
-#define DISCONNECTED       7
+#define DISABLED            0
+#define ENABLING            1
+#define ENABLED             2
+#define CONNECTING          3
+#define SCANNING            4
+#define SCAN_COMPLETE       5
+#define CONNECTED           6
+#define DISCONNECTED        7
+#define AUTHENTICATION_FAIL 8
 
 //wifi scan result code
 #define SCAN_START         -1
